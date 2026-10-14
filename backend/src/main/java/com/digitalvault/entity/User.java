@@ -34,8 +34,11 @@ public class User {
     @Column(nullable = false)
     private String phone;
 
-    @Column(nullable = false, length = 20, columnDefinition = "varchar(20) default 'STUDENT'")
-    private String role = "STUDENT";
+    @Column(nullable = false, length = 20, columnDefinition = "varchar(20) default 'USER'")
+    private String role = "USER";
+
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean active = true;
 
     public User() {
     }
@@ -94,4 +97,7 @@ public class User {
     public void setRole(String role) {
         this.role = role;
     }
+
+    public boolean isActive() { return active; }
+    public void setActive(boolean active) { this.active = active; }
 }

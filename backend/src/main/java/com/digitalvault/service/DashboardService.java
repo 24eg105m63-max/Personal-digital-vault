@@ -1,6 +1,7 @@
 package com.digitalvault.service;
 
 import com.digitalvault.dto.DashboardResponse;
+import com.digitalvault.dto.AdminVaultStatsResponse;
 import com.digitalvault.entity.User;
 import com.digitalvault.exception.ApiException;
 import com.digitalvault.repository.CredentialRepository;
@@ -29,12 +30,17 @@ public class DashboardService {
 
     public DashboardResponse getDashboard(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ApiException("User not found"));
+                .orElseThrow(() -> new ApiException(org.springframework.http.HttpStatus.NOT_FOUND, "User not found"));
 
         long fileCount = vaultFileRepository.countByUser(user);
         long noteCount = noteRepository.countByUser(user);
         long credentialCount = credentialRepository.countByUser(user);
 
         return new DashboardResponse(user.getName(), user.getEmail(), fileCount, noteCount, credentialCount);
+    }
+
+    public AdminVaultStatsResponse getAdminStats() {
+        return new AdminVaultStatsResponse(userRepository.count(), vaultFileRepository.count(),
+                noteRepository.count(), credentialRepository.count());
     }
 }

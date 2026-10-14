@@ -113,7 +113,7 @@ public class EventService {
     @Transactional(readOnly = true)
     public AdminStatsResponse stats() {
         return new AdminStatsResponse(eventRepository.count(), eventRepository.countByEventDateGreaterThanEqual(LocalDate.now()),
-                registrationRepository.count(), userRepository.countByRole("STUDENT"));
+                registrationRepository.count(), userRepository.countByRole("STUDENT") + userRepository.countByRole("USER"));
     }
 
     private Event findEvent(Long id) { return eventRepository.findById(id).orElseThrow(() -> new ApiException("Event not found")); }

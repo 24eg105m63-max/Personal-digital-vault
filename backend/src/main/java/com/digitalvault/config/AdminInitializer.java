@@ -12,13 +12,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class AdminInitializer {
     @Bean
     CommandLineRunner ensureAdministrator(UserRepository users, PasswordEncoder encoder,
-                                          @Value("${app.admin.email}") String email,
-                                          @Value("${app.admin.password}") String password,
-                                          @Value("${app.admin.name}") String name,
-                                          @Value("${app.admin.phone}") String phone) {
+                                          @Value("${app.admin.username}") String username,
+                                          @Value("${app.admin.password}") String password) {
         return args -> {
-            User admin = users.findByEmail(email).orElseGet(() -> new User(name, email, encoder.encode(password), phone));
+            User admin = users.findByEmail(username)
+                    .orElseGet(() -> new User("Vault Administrator", username, encoder.encode(password), "0000000000"));
             admin.setRole("ADMIN");
+            admin.setActive(true);
+            // Keep the configured local/deployment admin credentials authoritative on startup.
+            admin.setPassword(encoder.encode(password));
             users.save(admin);
         };
     }

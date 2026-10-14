@@ -6,7 +6,6 @@ import com.digitalvault.dto.RegistrationResponse;
 import com.digitalvault.service.EventService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,27 +29,22 @@ public class EventController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
     public EventResponse create(@Valid @RequestBody EventRequest request, Authentication authentication) {
         return eventService.createEvent(request, authentication.getName());
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public EventResponse update(@PathVariable Long id, @Valid @RequestBody EventRequest request) { return eventService.updateEvent(id, request); }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMIN')")
     public void delete(@PathVariable Long id) { eventService.deleteEvent(id); }
 
     @PostMapping("/{id}/register")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('STUDENT')")
     public RegistrationResponse register(@PathVariable Long id, Authentication authentication) { return eventService.register(id, authentication.getName()); }
 
     @DeleteMapping("/{id}/register")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('STUDENT')")
     public void cancel(@PathVariable Long id, Authentication authentication) { eventService.cancelRegistration(id, authentication.getName()); }
 }

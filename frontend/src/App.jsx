@@ -1,55 +1,79 @@
-import { BrowserRouter, Link, Navigate, NavLink, Outlet, Route, Routes, useNavigate } from 'react-router-dom';
-import HomePage from './pages/HomePage';
+import { useEffect, useState } from 'react';
+import { BrowserRouter, Navigate, NavLink, Outlet, Route, Routes, useNavigate } from 'react-router-dom';
+import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
+import Files from './pages/Files';
+import Notes from './pages/Notes';
+import Credentials from './pages/Credentials';
+import Profile from './pages/Profile';
+import UserManagement from './pages/UserManagement';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Events from './pages/Events';
-import EventDetails from './pages/EventDetails';
-import MyRegistrations from './pages/MyRegistrations';
-import Profile from './pages/Profile';
-import AdminDashboard from './pages/AdminDashboard';
-import EventForm from './pages/EventForm';
-import ManageEvents from './pages/ManageEvents';
-import ManageRegistrations from './pages/ManageRegistrations';
 import NotFound from './pages/NotFound';
+import Sidebar from './components/Sidebar';
+import Navbar from './components/Navbar';
+import ProtectedRoute from './components/ProtectedRoute';
 import './index.css';
-import './events.css';
 
-function userInfo() {
+function storedUser() {
   try { return JSON.parse(localStorage.getItem('vault_user') || 'null'); } catch { return null; }
 }
 
-function SiteHeader() {
-  const navigate = useNavigate(); const user = userInfo();
-  const logout = () => { localStorage.removeItem('vault_token'); localStorage.removeItem('vault_user'); navigate('/'); };
-  return <header className="site-header"><Link className="site-brand" to="/"><span className="brand-symbol">C</span><span>COMMON<span className="brand-dot">.</span><small>CAMPUS EVENTS</small></span></Link><nav className="site-nav"><NavLink to="/events">Events</NavLink>{user?.role === 'STUDENT' && <NavLink to="/registrations">My registrations</NavLink>}{user?.role === 'ADMIN' && <NavLink to="/admin">Event desk</NavLink>}{user && <NavLink to="/profile">Profile</NavLink>}</nav><div className="header-actions">{user ? <><Link className="header-user" to={user.role === 'ADMIN' ? '/admin' : '/profile'}><span className="user-avatar">{user.name?.charAt(0) || 'U'}</span><span>{user.name?.split(' ')[0]}</span></Link><button className="header-signout" onClick={logout} title="Sign out" aria-label="Sign out">↗</button></> : <><Link className="header-signin" to="/login">Sign in</Link><Link className="header-join" to="/register">Join campus <span>→</span></Link></>}</div></header>;
+function VaultLayout() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [user, setUser] = useState(storedUser);
+  useEffect(() => {
+    const syncUser = () => setUser(storedUser());
+    window.addEventListener('vault-profile-updated', syncUser);
+    return () => window.removeEventListener('vault-profile-updated', syncUser);
+  }, []);
+  return <div className="app-shell">
+    <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} />
+    <div className="page-shell">
+      <Navbar onMenu={() => setMenuOpen((open) => !open)} user={user} />
+      <main className="page-content"><Outlet /></main>
+      <MobileBottomNav />
+    </div>
+  </div>;
 }
 
-function SiteFooter() {
-  return <footer className="site-footer"><Link className="site-brand" to="/"><span className="brand-symbol">C</span><span>COMMON<span className="brand-dot">.</span><small>CAMPUS EVENTS</small></span></Link><span>Make campus yours. <b>© {new Date().getFullYear()}</b></span><Link to="/events">Explore the calendar ↗</Link></footer>;
+function MobileBottomNav() {
+  const links = [['◫', 'Home', '/dashboard'], ['▧', 'Files', '/files'], ['▤', 'Notes', '/notes'], ['♙', 'Users', '/admin/users'], ['◎', 'Profile', '/profile']];
+  return <nav className="mobile-bottom-nav" aria-label="Mobile navigation">{links.map(([icon, label, path]) => <NavLink key={path} to={path} end className={({ isActive }) => isActive ? 'mobile-bottom-link active' : 'mobile-bottom-link'}><span>{icon}</span>{label}</NavLink>)}</nav>;
 }
 
-function SiteLayout() { return <><SiteHeader /><Outlet /><SiteFooter /></>; }
-function RequireRole({ role }) { const user = userInfo(); return localStorage.getItem('vault_token') && (!role || user?.role === role) ? <Outlet /> : <Navigate to="/login" replace state={{ from: window.location.pathname }} />; }
-function PublicOnly({ children }) { const user = userInfo(); return localStorage.getItem('vault_token') ? <Navigate to={user?.role === 'ADMIN' ? '/admin' : '/events'} replace /> : children; }
+function LogoutPage() {
+  const navigate = useNavigate();
+  const logout = () => { localStorage.removeItem('vault_token'); localStorage.removeItem('vault_user'); navigate('/login', { replace: true }); };
+  return <section className="state-card logout-state"><div className="state-icon">↗</div><h1>Sign out?</h1><p>Your vault will stay protected. You can sign in again any time.</p><div className="button-row"><button className="secondary-button" onClick={() => navigate(-1)}>Cancel</button><button className="danger-button" onClick={logout}>Sign out</button></div></section>;
+}
+
+function PublicOnly({ children }) {
+  if (localStorage.getItem('vault_token')) return <Navigate to="/dashboard" replace />;
+  return children;
+}
+
+function RootRedirect() {
+  return <Navigate to={localStorage.getItem('vault_token') ? '/dashboard' : '/login'} replace />;
+}
 
 export default function App() {
-  return <BrowserRouter><Routes><Route element={<SiteLayout />}>
-    <Route index element={<HomePage />} />
-    <Route path="events" element={<Events />} />
-    <Route path="events/:id" element={<EventDetails />} />
-    <Route path="login" element={<PublicOnly><Login /></PublicOnly>} />
-    <Route path="register" element={<PublicOnly><Register /></PublicOnly>} />
-    <Route element={<RequireRole role="STUDENT" />}>
-      <Route path="registrations" element={<MyRegistrations />} />
+  return <BrowserRouter><Routes>
+    <Route path="/" element={<RootRedirect />} />
+    <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
+    <Route path="/register" element={<PublicOnly><Register /></PublicOnly>} />
+    <Route element={<ProtectedRoute />}>
+      <Route element={<VaultLayout />}>
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="files" element={<Files />} />
+        <Route path="notes" element={<Notes />} />
+        <Route path="credentials" element={<Credentials />} />
+        <Route path="profile" element={<Profile />} />
+        <Route path="logout" element={<LogoutPage />} />
+        <Route path="admin" element={<AdminDashboard />} />
+        <Route path="admin/users" element={<UserManagement />} />
+        <Route path="*" element={<NotFound />} />
+      </Route>
     </Route>
-    <Route element={<RequireRole />}><Route path="profile" element={<Profile />} /></Route>
-    <Route element={<RequireRole role="ADMIN" />}>
-      <Route path="admin" element={<AdminDashboard />} />
-      <Route path="admin/events" element={<ManageEvents />} />
-      <Route path="admin/events/new" element={<EventForm />} />
-      <Route path="admin/events/:id/edit" element={<EventForm editing />} />
-      <Route path="admin/registrations" element={<ManageRegistrations />} />
-    </Route>
-    <Route path="*" element={<NotFound />} />
-  </Route></Routes></BrowserRouter>;
+  </Routes></BrowserRouter>;
 }

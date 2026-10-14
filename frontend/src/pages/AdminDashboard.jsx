@@ -5,8 +5,22 @@ import ErrorMessage from '../components/ErrorMessage';
 import Loading from '../components/Loading';
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState(null); const [events, setEvents] = useState([]); const [error, setError] = useState('');
-  useEffect(() => { Promise.all([api.get('/admin/stats'), api.get('/events')]).then(([statResponse, eventResponse]) => { setStats(statResponse.data); setEvents(eventResponse.data.slice(0, 4)); }).catch((err) => setError(errorMessage(err))); }, []);
-  if (!stats && !error) return <Loading label="Loading admin dashboard..." />;
-  return <main className="content-wrap"><div className="simple-heading"><div><p className="eyebrow">ADMIN / EVENT DESK</p><h1>Good work starts here.</h1><p>One view of what’s happening across campus.</p></div><Link to="/admin/events/new" className="primary-button">＋ Create event</Link></div><ErrorMessage message={error} /><section className="admin-stats"><div><span>EVENTS ON THE BOOKS</span><strong>{stats?.totalEvents ?? 0}</strong><small>Across all categories</small></div><div><span>UPCOMING</span><strong>{stats?.upcomingEvents ?? 0}</strong><small>Still to come</small></div><div><span>STUDENT PLACES</span><strong>{stats?.registrations ?? 0}</strong><small>{stats?.students ?? 0} student accounts</small></div></section><div className="admin-section-heading"><div><p className="eyebrow">COMING INTO VIEW</p><h2>Recently scheduled</h2></div><Link className="text-action" to="/admin/events">Manage all events →</Link></div><div className="admin-event-list">{events.map((event) => <Link className="admin-event-row" key={event.id} to={`/admin/events/${event.id}/edit`}><span className="category-tag">{event.category}</span><strong>{event.name}</strong><span>{event.eventDate}</span><span>{event.registeredParticipants} / {event.maximumParticipants} attending</span><b>↗</b></Link>)}</div><div className="admin-shortcuts"><Link to="/admin/registrations"><span>01</span><strong>Manage registrations</strong><small>Review attendees and remove entries</small><b>→</b></Link><Link to="/admin/events"><span>02</span><strong>Manage events</strong><small>Edit details and capacity</small><b>→</b></Link></div></main>;
+  const [stats, setStats] = useState(null);
+  const [error, setError] = useState('');
+  useEffect(() => { api.get('/admin/vault-stats').then(({ data }) => setStats(data)).catch((err) => setError(errorMessage(err))); }, []);
+  if (!stats && !error) return <Loading label="Loading workspace overview..." />;
+  return <div>
+    <div className="page-heading"><div><p className="eyebrow">WORKSPACE OVERVIEW</p><h1>Vault overview</h1><p className="muted">A high-level view of your vault workspace.</p></div><Link to="/admin/users" className="primary-button">＋ Manage users</Link></div>
+    <ErrorMessage message={error} />
+    <section className="admin-stats-grid">
+      <AdminStat label="Total users" value={stats?.userCount ?? '—'} icon="♙" tone="tone-blue" />
+      <AdminStat label="Total files" value={stats?.fileCount ?? '—'} icon="▧" tone="tone-purple" />
+      <AdminStat label="Total notes" value={stats?.noteCount ?? '—'} icon="▤" tone="tone-teal" />
+      <AdminStat label="Total credentials" value={stats?.credentialCount ?? '—'} icon="◇" tone="tone-amber" />
+    </section>
+    <section className="admin-welcome dashboard-card"><div><p className="eyebrow">VAULT CONTROL CENTER</p><h2>Protect the space.<br />Keep it simple.</h2><p>Manage accounts and monitor high-level usage. User files, notes, and credentials remain private to their owners.</p><Link to="/admin/users" className="button-link">Open user management <span>↗</span></Link></div><div className="admin-shield" aria-hidden="true"><span>◆</span><b>✓</b></div></section>
+    <section className="dashboard-card admin-shortcut-card"><div><p className="eyebrow">WORKSPACE TOOLS</p><h2>Account management</h2></div><div className="admin-shortcuts"><Link to="/admin/users"><span className="shortcut-icon tone-blue">♙</span><strong>User management</strong><small>Search and manage accounts</small><b>↗</b></Link><Link to="/profile"><span className="shortcut-icon tone-purple">⚙</span><strong>Account profile</strong><small>Review your account details</small><b>↗</b></Link></div></section>
+  </div>;
 }
+
+function AdminStat({ label, value, icon, tone }) { return <div className="admin-stat-card"><span className={`admin-stat-icon ${tone}`}>{icon}</span><div><small>{label}</small><strong>{value}</strong></div><span className="stat-trend">↗</span></div>; }

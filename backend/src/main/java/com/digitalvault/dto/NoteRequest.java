@@ -10,6 +10,7 @@ public class NoteRequest {
     private String title;
 
     @NotBlank(message = "Content is required")
+    @Size(max = 20000, message = "Content must be 20,000 characters or fewer")
     private String content;
 
     public String getTitle() {

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.crypto.Cipher;
+import javax.crypto.Mac;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
@@ -34,19 +35,17 @@ public class CredentialService {
 
     public CredentialService(CredentialRepository credentialRepository,
                              UserRepository userRepository,
-                             @Value("${app.credential.encryption-key}") String base64EncryptionKey) {
+                             @Value("${jwt.secret}") String jwtSecret) {
         this.credentialRepository = credentialRepository;
         this.userRepository = userRepository;
-        byte[] keyBytes;
         try {
-            keyBytes = Base64.getDecoder().decode(base64EncryptionKey);
-        } catch (IllegalArgumentException ex) {
-            throw new IllegalStateException("CREDENTIAL_ENCRYPTION_KEY must be Base64-encoded.", ex);
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(jwtSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            byte[] keyBytes = mac.doFinal("Personal-Digital-Vault:credential-encryption:v1".getBytes(StandardCharsets.UTF_8));
+            this.encryptionKey = new SecretKeySpec(keyBytes, "AES");
+        } catch (GeneralSecurityException ex) {
+            throw new IllegalStateException("Could not derive credential encryption key from JWT_SECRET.", ex);
         }
-        if (keyBytes.length != 32) {
-            throw new IllegalStateException("CREDENTIAL_ENCRYPTION_KEY must decode to exactly 32 bytes.");
-        }
-        this.encryptionKey = new SecretKeySpec(keyBytes, "AES");
     }
 
     @Transactional(readOnly = true)
@@ -88,11 +87,11 @@ public class CredentialService {
 
     private Credential findCredential(Long id, User user) {
         return credentialRepository.findByIdAndUser(id, user)
-                .orElseThrow(() -> new ApiException("Credential not found or access denied"));
+                .orElseThrow(() -> new ApiException(org.springframework.http.HttpStatus.NOT_FOUND, "Credential not found or access denied"));
     }
 
     private User getUserByEmail(String email) {
-        return userRepository.findByEmail(email).orElseThrow(() -> new ApiException("User not found"));
+        return userRepository.findByEmail(email).orElseThrow(() -> new ApiException(org.springframework.http.HttpStatus.NOT_FOUND, "User not found"));
     }
 
     private CredentialResponse toResponse(Credential credential) {
@@ -131,7 +130,8 @@ public class CredentialService {
             cipher.init(Cipher.DECRYPT_MODE, encryptionKey, new GCMParameterSpec(TAG_BITS, nonce));
             return new String(cipher.doFinal(ciphertext), StandardCharsets.UTF_8);
         } catch (GeneralSecurityException | IllegalArgumentException ex) {
-            throw new IllegalStateException("Could not decrypt credential. Verify CREDENTIAL_ENCRYPTION_KEY.", ex);
+            throw new ApiException(org.springframework.http.HttpStatus.CONFLICT,
+                    "This saved credential cannot be decrypted with the current JWT_SECRET. Remove it and save the password again.");
         }
     }
 }

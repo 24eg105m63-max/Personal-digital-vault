@@ -1,6 +1,7 @@
 package com.digitalvault.controller;
 
 import com.digitalvault.dto.DashboardResponse;
+import com.digitalvault.dto.AdminVaultStatsResponse;
 import com.digitalvault.service.DashboardService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -21,5 +22,10 @@ public class DashboardController {
     @GetMapping("/dashboard")
     public ResponseEntity<DashboardResponse> getDashboard(Authentication authentication) {
         return ResponseEntity.ok(dashboardService.getDashboard(authentication.getName()));
+    }
+
+    @GetMapping("/admin/vault-stats")
+    public ResponseEntity<AdminVaultStatsResponse> getAdminStats() {
+        return ResponseEntity.ok(dashboardService.getAdminStats());
     }
 }

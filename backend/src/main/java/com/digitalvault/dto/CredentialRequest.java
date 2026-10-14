@@ -14,6 +14,7 @@ public class CredentialRequest {
     private String username;
 
     @NotBlank(message = "Password is required")
+    @Size(min = 1, max = 500, message = "Password must be 500 characters or fewer")
     private String password;
 
     public String getServiceName() {

@@ -48,7 +48,7 @@ public class NoteService {
     public NoteResponse updateNote(String email, Long id, NoteRequest request) {
         User user = getUserByEmail(email);
         Note note = noteRepository.findByIdAndUser(id, user)
-                .orElseThrow(() -> new ApiException("Note not found or access denied"));
+                .orElseThrow(() -> new ApiException(org.springframework.http.HttpStatus.NOT_FOUND, "Note not found or access denied"));
         note.setTitle(request.getTitle().trim());
         note.setContent(request.getContent().trim());
         Note saved = noteRepository.save(note);
@@ -58,12 +58,12 @@ public class NoteService {
     public void deleteNote(String email, Long id) {
         User user = getUserByEmail(email);
         Note note = noteRepository.findByIdAndUser(id, user)
-                .orElseThrow(() -> new ApiException("Note not found or access denied"));
+                .orElseThrow(() -> new ApiException(org.springframework.http.HttpStatus.NOT_FOUND, "Note not found or access denied"));
         noteRepository.delete(note);
     }
 
     private User getUserByEmail(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ApiException("User not found"));
+                .orElseThrow(() -> new ApiException(org.springframework.http.HttpStatus.NOT_FOUND, "User not found"));
     }
 }

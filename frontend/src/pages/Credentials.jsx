@@ -3,6 +3,7 @@ import api, { errorMessage } from '../services/api';
 import CredentialCard from '../components/CredentialCard';
 import Loading from '../components/Loading';
 import ErrorMessage from '../components/ErrorMessage';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const empty = { serviceName: '', username: '', password: '' };
 
@@ -15,6 +16,7 @@ export default function Credentials() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   const load = () => api.get('/credentials')
     .then(({ data }) => setItems(data))
@@ -58,11 +60,13 @@ export default function Credentials() {
     }
   };
 
-  const remove = async (id) => {
-    if (!window.confirm('Delete this credential permanently?')) return;
+  const remove = (id) => setPendingDelete(items.find((item) => item.id === id) || null);
+  const confirmRemove = async () => {
+    if (!pendingDelete) return;
     try {
-      await api.delete(`/credentials/${id}`);
-      setItems((current) => current.filter((item) => item.id !== id));
+      await api.delete(`/credentials/${pendingDelete.id}`);
+      setItems((current) => current.filter((item) => item.id !== pendingDelete.id));
+      setPendingDelete(null);
       setNotice('Credential deleted.');
     } catch (err) {
       setError(errorMessage(err));
@@ -87,13 +91,14 @@ export default function Credentials() {
         <div className="modal-backdrop">
           <form className="modal" onSubmit={save}>
             <div className="modal-header"><div><p className="eyebrow">{editing ? 'EDIT CREDENTIAL' : 'NEW CREDENTIAL'}</p><h2>{editing ? 'Update access detail' : 'Secure a login'}</h2></div><button type="button" className="close-button" onClick={() => setModal(false)}>×</button></div>
-            <label>Service name<input required value={form.serviceName} onChange={(event) => setForm({ ...form, serviceName: event.target.value })} placeholder="e.g. GitHub" /></label>
-            <label>Username<input required value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} placeholder="Username or email" /></label>
-            <label>{editing ? 'New password' : 'Password'}<input required type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="Password" autoComplete="new-password" /></label>
-            <button className="primary-button wide" disabled={saving}>{saving ? 'Saving...' : 'Save credential'}</button>
+            <label>Service name<input required minLength="2" maxLength="100" value={form.serviceName} onChange={(event) => setForm({ ...form, serviceName: event.target.value })} placeholder="e.g. GitHub" /></label>
+            <label>Username<input required minLength="2" maxLength="100" value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} placeholder="Username or email" /></label>
+            <label>{editing ? 'New password' : 'Password'}<input required type="password" maxLength="500" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="Password" autoComplete="new-password" /></label>
+            <div className="modal-actions"><button type="button" className="secondary-button" onClick={() => setModal(false)}>Cancel</button><button className="primary-button" disabled={saving}>{saving ? 'Saving...' : 'Save credential'}</button></div>
           </form>
         </div>
       )}
+      <ConfirmDialog open={!!pendingDelete} title="Delete this credential?" message={`“${pendingDelete?.serviceName || ''}” and its encrypted password will be permanently removed.`} confirmLabel="Delete credential" onCancel={() => setPendingDelete(null)} onConfirm={confirmRemove} />
     </div>
   );
 }
