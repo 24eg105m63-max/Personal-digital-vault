@@ -1,0 +1,3 @@
+export default function NoteCard({ note, onEdit, onDelete }) {
+  return <article className="item-card note-card"><div className="note-accent" /><div className="item-main"><div className="card-heading"><strong>{note.title}</strong><span>{new Date(note.updatedAt || note.createdAt).toLocaleDateString()}</span></div><p>{note.content}</p><small>Created {new Date(note.createdAt).toLocaleDateString()}</small></div><div className="item-actions"><button className="ghost-button" onClick={() => onEdit(note)}>Edit</button><button className="ghost-button danger-text" onClick={() => onDelete(note.id)}>Delete</button></div></article>;
+}

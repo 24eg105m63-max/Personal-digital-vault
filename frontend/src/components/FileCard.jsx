@@ -1,0 +1,4 @@
+export default function FileCard({ file, onDownload, onDelete }) {
+  const size = file.fileSize < 1024 * 1024 ? `${Math.max(1, Math.round(file.fileSize / 1024))} KB` : `${(file.fileSize / 1024 / 1024).toFixed(1)} MB`;
+  return <article className="item-card file-card"><div className="file-icon">{file.contentType?.includes('pdf') ? 'PDF' : 'DOC'}</div><div className="item-main"><strong title={file.originalFileName}>{file.originalFileName}</strong><span>{file.contentType || 'Document'} · {size}</span><small>{new Date(file.uploadedAt).toLocaleDateString()}</small></div><div className="item-actions"><button className="ghost-button" onClick={() => onDownload(file)} title="Download file">↓</button><button className="ghost-button danger-text" onClick={() => onDelete(file.id)} title="Delete file">×</button></div></article>;
+}
