@@ -9,6 +9,7 @@ import Profile from './pages/Profile';
 import UserManagement from './pages/UserManagement';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import LandingPage from './pages/LandingPage';
 import NotFound from './pages/NotFound';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
@@ -53,13 +54,9 @@ function PublicOnly({ children }) {
   return children;
 }
 
-function RootRedirect() {
-  return <Navigate to={localStorage.getItem('vault_token') ? '/dashboard' : '/login'} replace />;
-}
-
 export default function App() {
   return <BrowserRouter><Routes>
-    <Route path="/" element={<RootRedirect />} />
+    <Route path="/" element={<LandingPage />} />
     <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
     <Route path="/register" element={<PublicOnly><Register /></PublicOnly>} />
     <Route element={<ProtectedRoute />}>
